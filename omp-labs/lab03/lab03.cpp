@@ -1,8 +1,12 @@
+#define NOMINMAX  // disable covering std::numeric_limits<>::min()
+
 #include <omp.h>
 #include <iostream>
 #include <windows.h>
 #include <cmath>
 #include <iomanip>
+#include <limits>
+#include <random>
 
 using namespace std;
 
@@ -159,13 +163,46 @@ namespace VectorDotProduct
 }
 
 
+namespace MaxValue
+{
+	int run()
+	{
+		const int size = 15;
+		int V[size];
+		random_device rd;
+		mt19937 gen(rd());
+		uniform_int_distribution dist(-1000, 1000);
+		for (int i = 0; i < size; i++) {
+			V[i] = dist(gen);
+			cout << V[i] << " ";
+		}
+		cout << '\n';
+
+		int max = numeric_limits<int>::min();
+
+#pragma omp parallel for
+		for (int i = 0; i < size; i++) {
+			if (V[i] > max)
+#pragma omp critical
+			{
+				max = V[i];
+			}
+		}
+
+		cout << "Max value: " << max << '\n';
+		return 0;
+	}
+}
+
+
 int main()
 {
 	//Schedule::run_static();
 	//Schedule::run_guided();
 	//Sections::run();
 	//LeibnizPi::run();
-	VectorDotProduct::run();
+	//VectorDotProduct::run();
+	MaxValue::run();
 
 	return 0;
 }
