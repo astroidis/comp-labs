@@ -1,6 +1,8 @@
 #include <omp.h>
 #include <iostream>
 #include <windows.h>
+#include <cmath>
+#include <iomanip>
 
 using namespace std;
 
@@ -114,11 +116,32 @@ namespace Sections
 }
 
 
+namespace LeibnizPi
+{
+	/* calculating pi with leibniz formula and openmp
+	 */
+	int run()
+	{
+		double pi = 0;
+		int count = 100000;
+
+#pragma omp parallel for reduction(+:pi)
+		for (int i = 0; i < count; i++) {
+			pi += pow(-1, i) / (2.0 * i + 1);
+		}
+		
+		cout << "Pi = " << setprecision(10) << 4 * pi << '\n';
+		return 0;
+	}
+}
+
+
 int main()
 {
 	//Schedule::run_static();
 	//Schedule::run_guided();
-	Sections::run();
+	//Sections::run();
+	LeibnizPi::run();
 
 	return 0;
 }
