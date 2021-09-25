@@ -135,13 +135,37 @@ namespace LeibnizPi
 	}
 }
 
+namespace VectorDotProduct
+{
+	/* calculate dot product of vectors a(a1, a2, a3) and b(b1, b2, b3)
+	 * a * b = a1*b1 + a2*b2 + a3*b3
+	 */
+	int run()
+	{
+		const int size = 10;
+		double prod = 0,
+			A[size] = { 1, 5, 7, 5, 8, 4, 6, 1, 10, 0},
+			B[size] = { 3, 5, 1, 6, 8, 2, 6, 9, 0, 2};
+
+#pragma omp parallel for shared(A, B) reduction(+:prod)
+		for (int i = 0; i < size; i++) {
+			prod += A[i] * B[i];
+			cout << omp_get_thread_num() << '\n';
+		}
+
+		cout << "Dot product: " << prod << '\n';
+		return 0;
+	}
+}
+
 
 int main()
 {
 	//Schedule::run_static();
 	//Schedule::run_guided();
 	//Sections::run();
-	LeibnizPi::run();
+	//LeibnizPi::run();
+	VectorDotProduct::run();
 
 	return 0;
 }
