@@ -2,91 +2,123 @@
 #include <iostream>
 #include <windows.h>
 
-//int main() {
-//	system("chcp 1251 > nul");
-//
-//	int A[10], B[10], C[10], i, n;
-//	for (i = 0; i < 10; i++) {
-//		A[i] = i; 
-//		B[i] = 2 * i; 
-//		C[i] = 0;
-//	}
-//
-//#pragma omp parallel shared(A, B, C) private(i, n)
-//	{
-//		n = omp_get_thread_num();
-//#pragma omp for schedule(static)
-//		for (i = 0; i < 10; i++) {
-//			C[i] = A[i] + B[i];
-//			printf("Нить %d сложила элементы с номером %d\n", n, i);
-//		}
-//	}
-//	return 0;
-//}
+using namespace std;
 
-//int main()
-//{
-//	system("chcp 1251>nul");
-//
-//#pragma omp parallel
-//	{
-//#pragma omp for schedule (guided, 3)
-//		for (int i = 0; i < 20; i++)
-//		{
-//			printf("Нить %d выполнила итерацию %d\n", omp_get_thread_num(), i);
-//			Sleep(1);
-//		}
-//	}
-//	return 0;
-//}
 
-//#include <fstream>
-
-//int main()
-//{
-//	system("chcp 1251>nul");
-//	std::ofstream file;
-//	file.open("guided_6.txt");
-//
-//#pragma omp parallel
-//	{
-//#pragma omp for schedule (guided, 6)
-//		for (int i = 0; i < 100; i++)
-//		{
-//#pragma omp critical
-//			{
-//				file << omp_get_thread_num() << "," << i << '\n';
-//			}
-//			Sleep(1);
-//		}
-//	}
-//	return 0;
-//}
-
-int main() 
+namespace Schedule
 {
-	system("chcp 1251>nul");
+	int run_static()
+	{
+		int A[10], B[10], C[10], n;
 
-	int n;
+		for (int i = 0; i < 10; i++)
+		{
+			A[i] = i;
+			B[i] = 2 * i;
+			C[i] = 0;
+		}
+
+#pragma omp parallel shared(A, B, C) private(n)
+		{
+			n = omp_get_thread_num();
+
+#pragma omp for schedule(static)
+			for (int i = 0; i < 10; i++) {
+				C[i] = A[i] + B[i];
+#pragma omp critical
+				cout << "Thread " << n << " had added elements with index " << i << "\n";
+			}
+		}
+
+		return 0;
+	}
+
+
+	int run_guided()
+	{
+#pragma omp parallel for schedule(guided, 3)
+		for (int i = 0; i < 20; i++) {
+#pragma omp critical
+			{
+				cout << "Thread " << omp_get_thread_num() << " executed iteration " << i << "\n";
+			}
+			Sleep(1);
+		}
+		
+		return 0;
+	}
+}
+
+
+namespace Sections
+{
+	int run()
+	{
+		int n;
+
 #pragma omp parallel private(n)
-	{
-		n = omp_get_thread_num();
+		{
+			n = omp_get_thread_num();
+
 #pragma omp sections
+			{
+#pragma omp section
+				{
+					cout << "First section, thread " << omp_get_thread_num() << '\n';
+				}
+#pragma omp section
+				{
+					cout << "Second section, thread " << omp_get_thread_num() << '\n';
+				}
+			}
+
+			cout << "Parallel region\n";
+		}
+
+		return 0;
+	}
+
+	/* this code compiles but crashes with runtime error
+	 * it says that 'n' used but initialized
+	 * but i dont understand how can this be
+	 */
+	int with_lastprivate()
 	{
-#pragma omp section
+		int n = 0;
+
+#pragma omp parallel
 		{
-			printf("Первая секция, процесс %d\n", n);
-		}
+#pragma omp sections lastprivate(n)
+			{
 #pragma omp section
-		{
-			printf("Вторая секция, процесс %d\n", n);
-		}
+				{
+					n = 1;
+				}
 #pragma omp section
-		{
-			printf("Третья секция, процесс %d\n", n);
+				{
+					n = 2;
+				}
+#pragma omp section
+				{
+					n = 3;
+				}
+			}
+
+#pragma omp critical
+			cout << "In thread " << omp_get_thread_num() << " n = " << n << '\n';
 		}
+
+		cout << "In sequiential region n = " << n << '\n';
+		return 0;
 	}
-	printf("Параллельная область, процесс %d\n", n);
-	}
+}
+
+
+int main()
+{
+	//Schedule::run_static();
+	//Schedule::run_guided();
+	Sections::run();
+
 	return 0;
 }
